@@ -65,7 +65,8 @@ int main()
                 menor_part = menor;
                 sprintf(name_file, "p%d", num_part);
                 p = fopen(name_file,"ab");
-                fprintf(p, "%d\n", menor);
+                fprintf(p, "%d ", menor);
+                fclose(p);
                 if(feof(fl))
                 {
                     part[pos_empty].zerado = 1;
@@ -123,7 +124,6 @@ int main()
                 part[i].congelado = 0;
             }
             num_part++;
-            fclose(p);
             sprintf(name_file, "p%d", num_part);
             p = fopen(name_file,"wb");
             fclose(p);
