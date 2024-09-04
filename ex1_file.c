@@ -2,19 +2,19 @@
 #include<stdlib.h>
 
 void create_file(FILE *fl);
-void reset(FILE *p, Reg part[], int num_part, char name_file[], int menor_part);
 
 typedef struct REGISTRO
 {
     int num;
     int congelado;
+    int zerado;
 } Reg;
 
 int main()
 {
     //create file
     Reg part[7];
-    int num_part = 1, pos_empty, count = 0;
+    int num_part = 1, pos_empty, count = 0, part_size = 7;
     char name_file[4];
     FILE *fl, *p;
     //verifica se existe o arquivo ou n
@@ -27,18 +27,23 @@ int main()
     {
         fscanf(fl, "%d", &part[i].num);
         part[i].congelado = 0;
+        part[i].zerado = 0;
         printf("%d ", part[i].num);
     }
 
     int menor_part = 123456789;
-    while(!feof(fl))
+    while(1)
     {
-        int menor = 123456789;
-        //printf("o menor é: %d\n", menor);        //verifica quantos estão congelados no vetor
-        //acha o menor do vetor
-        for(int i = 0; i<7;i++)
+        if(num_part > 3)
         {
-            if(part[i].num < menor && part[i].congelado == 0)
+            break;
+        }
+        int menor = 123456789;
+        //printf("o menor é: %d\n", menor);
+        //acha o menor do vetor
+        for(int i = 0; i<part_size;i++)
+        {
+            if(part[i].num < menor && part[i].congelado == 0 && part[i].zerado == 0)
             {
                 menor = part[i].num;
                 pos_empty = i;
@@ -51,27 +56,56 @@ int main()
             sprintf(name_file, "p%d", num_part);
             p = fopen(name_file, "wb");
         }
+
         if(menor < menor_part)
         {
             printf("\ncongelei %d %d\n", menor, menor_part);
             part[pos_empty].congelado = 1;
         } else{
-            menor_part = menor;
-            sprintf(name_file, "p%d", num_part);
-            p = fopen(name_file,"ab");
-            fprintf(p, "%d ", menor);
-            fscanf(fl, "%d", &part[pos_empty].num);
+                menor_part = menor;
+                sprintf(name_file, "p%d", num_part);
+                p = fopen(name_file,"ab");
+                fprintf(p, "%d\n", menor);
+                if(feof(fl))
+                {
+                    part[pos_empty].zerado = 1;
+                    part[pos_empty].congelado = 1;
+                } else{
+                    fscanf(fl, "%d", &part[pos_empty].num);
+                    //para zerar quando chegar no final do aqruivo
+                    if(feof(fl))
+                    {
+                        part[pos_empty].zerado = 1;
+                        part[pos_empty].congelado = 1;
+                    }
+                }
+                
         }
 
-
-        //printf("\n%d\n", pos_empty);
-        for (int i = 0; i < 7; i++)
+        if(feof(fl))
         {
-            printf("%d ", part[i].num);
-        }
-        printf("\n");
+            count = 0;
+            //verifica se ta zerado
+            for(int i = 0; i<part_size; i++)
+            {
+                if(part[i].zerado == 1)
+                {
+                    //printf("congelado[%d]\n", part[i].num);
+                    count++;
+                }
+            }
 
-        for(int i = 0, count = 0; i<7; i++)
+            if(count == part_size)
+            {
+                printf("acabou");
+                break;
+            }
+            
+        }
+
+        count = 0;
+        //verifica se ta congelado
+        for(int i = 0; i<part_size; i++)
         {
             if(part[i].congelado == 1)
             {
@@ -80,10 +114,11 @@ int main()
             }
         }
 
-        if(count == 7)
+        //reseta
+        if(count == part_size)
         {
-            reset(p, part, num_part, name_file, menor_part);
-            /*for(int i = 0, count = 0; i<7; i++)
+            printf("entrou\n");
+            for(int i = 0, count = 0; i<part_size; i++)
             {
                 part[i].congelado = 0;
             }
@@ -91,10 +126,19 @@ int main()
             fclose(p);
             sprintf(name_file, "p%d", num_part);
             p = fopen(name_file,"wb");
-            menor_part = 123456789;*/
+            fclose(p);
+            menor_part = 123456789;
         }
+
+        //printf("\n%d\n", pos_empty);
+        for (int i = 0; i < part_size; i++)
+        {
+            printf("%d ", part[i].num);
+        }
+        printf("\n");
     }
 
+    
 
 }
 
@@ -105,17 +149,4 @@ void create_file(FILE *fl)
     {
         fprintf(fl, "%d ", vect[i]);
     }
-}
-
-void reset(FILE *p, Reg part[], int num_part, char name_file[], int menor_part)
-{
-    for(int i = 0, count = 0; i<7; i++)
-            {
-                part[i].congelado = 0;
-            }
-            num_part++;
-            fclose(p);
-            sprintf(name_file, "p%d", num_part);
-            p = fopen(name_file,"wb");
-            menor_part = 123456789;
 }
