@@ -53,7 +53,7 @@ void intercalar_particoes(char *particoes[], int num_particoes, char *arquivo_sa
 
     // abre todos e coloca primeiro elemento na heap
     for (int i = 0; i < num_particoes; i++) {
-        files[i] = fopen(particoes[i], "r");
+        files[i] = fopen(particoes[i], "rb");
         if (files[i] == NULL) {
             printf("Erro ao abrir a partição: %s\n", particoes[i]);
             exit(EXIT_FAILURE);
@@ -69,7 +69,7 @@ void intercalar_particoes(char *particoes[], int num_particoes, char *arquivo_sa
 
     reconstruir_arvore(heap, num_ativos);
 
-    FILE *saida = fopen(arquivo_saida, "w");
+    FILE *saida = fopen(arquivo_saida, "wb");
     if (saida == NULL) {
         printf("Erro ao criar o arquivo de saída.\n");
         exit(EXIT_FAILURE);
