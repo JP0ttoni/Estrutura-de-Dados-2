@@ -21,14 +21,14 @@ typedef struct ex2
     no *raiz;
 }arv;
 
-void inserir(arv *arv, no *left, no *right, cli valor, FILE *f)
+arv *inserir(arv *arvore, no *left, no *right, cli valor, FILE *f)
 {
-    no *new = (no*) malloc(sizeof(no));
-    new->valor = valor;
-    new->left = left;
-    new->right = right;
-    new->f = f;
-    arv->raiz = new;
+    arv *new = (arv*) malloc(sizeof(no));
+    new->raiz->valor = valor;
+    new->raiz->left = left;
+    new->raiz->right = right;
+    new->raiz->f = f;
+    return new;
 }
 
 no *criar(char name[20])
@@ -50,9 +50,24 @@ no *criar(char name[20])
     return new;
 }
 
+
 int main()
 {
+    cli new_cli;
     no *new = criar("p1");
     no *new2 = criar("p2");
-    printf("%d %d", new->valor.cod_cli, new2->valor.cod_cli);
+    FILE *f = fopen("p1", "rb");
+    arv *new_arv = inserir(new_arv, new, new2, new_cli, f);
+    printf("%d %d", new_arv->raiz->left->valor.cod_cli, new_arv->raiz->right->valor.cod_cli);
+
+    fclose(new->f);
+    fclose(new2->f);
+    fclose(f);
+
+    free(new);
+    free(new2);
+    free(new_arv->raiz);
+    free(new_arv);
+    
+    return 0;
 }
