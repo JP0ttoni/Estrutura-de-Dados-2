@@ -14,7 +14,7 @@ typedef struct CLIENTE
 {
     Reg cod_cli;
     char nome[50];
-    char Data_nasc[11];
+    char Data_nasc[20];
 } cli;
 
 void imprime(int part_size, cli part[])
