@@ -23,12 +23,21 @@ typedef struct ex2
 
 arv *inserir(arv *arvore, no *left, no *right, cli valor, FILE *f)
 {
-    arv *new = (arv*) malloc(sizeof(no));
-    new->raiz->valor = valor;
-    new->raiz->left = left;
-    new->raiz->right = right;
-    new->raiz->f = f;
-    return new;
+    if(arvore->raiz == NULL)
+    {
+        arv *new = (arv*) malloc(sizeof(no));
+        new->raiz->valor = valor;
+        new->raiz->left = left;
+        new->raiz->right = right;
+        new->raiz->f = f;
+        return new;
+    } else{
+        arvore->raiz->valor = valor;
+        arvore->raiz->left = left;
+        arvore->raiz->right = right;
+        arvore->raiz->f = f;
+        return arvore;
+    }
 }
 
 no *criar(char name[20])
@@ -68,6 +77,6 @@ int main()
     free(new2);
     free(new_arv->raiz);
     free(new_arv);
-    
+
     return 0;
 }
