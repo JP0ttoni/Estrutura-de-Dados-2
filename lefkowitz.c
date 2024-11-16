@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ELEMENTS 5
+#define ELEMENTS 8
 
 // Estrutura para representar os registros
 typedef struct {
@@ -46,10 +46,16 @@ void criarArquivoA2(FILE *arquivoDados, FILE *arquivoA2) {
     
 }
 
-int compararNomes(const void *a, const void *b) {
+int compararIdade(const void *a, const void *b) {
     const RegistroA3 *reg1 = (const RegistroA3 *)a;
     const RegistroA3 *reg2 = (const RegistroA3 *)b;
-    return strcmp(reg1->nome, reg2->nome);
+
+    // Primeiro, compara pela idade
+    if (reg1->idade != reg2->idade) {
+        return reg1->idade - reg2->idade;
+    } 
+    // Se as idades são iguais, compara pelo ED
+    return reg1->ED - reg2->ED;
 }
 
 
@@ -71,7 +77,7 @@ RegistroA3 *criarArquivoA3(FILE *arquivoDados_base, FILE *arquivoA3) {
         fscanf(arquivoDados, "%*d %d %d", &temp[i].codcli, &temp[i].idade);
         i++;
     }
-    qsort(temp, i, sizeof(RegistroA3), compararNomes);
+    qsort(temp, i, sizeof(RegistroA3), compararIdade);
 
     for(int j = 0; j < i; j++ )
     {
@@ -178,15 +184,59 @@ void criarArquivoA4( FILE *arquivoA4, FILE *arquivoA5, RegistroA3 *reg){
     //return reg;
 }
 
+int compare(const void *a, const void *b) {
+    RegistroA3 *regA = (RegistroA3 *)a;
+    RegistroA3 *regB = (RegistroA3 *)b;
+    return regA->codcli - regB->codcli;
+}
+
+void criarArquivoA6( FILE *arquivoA6, RegistroA3 *reg){
+    qsort(reg, ELEMENTS, sizeof(RegistroA3), compare);
+    printf("codcli: %d\n", reg[0].codcli);
+    for(int j = 0; j < ELEMENTS; j++ )
+    {
+            if(j + 1 != ELEMENTS)
+            {
+                fprintf(arquivoA6, "%d %d %d %d\n",reg[j].ED, reg[j].codcli,reg[j].idade, reg[j].PROX);
+            }else{
+                fprintf(arquivoA6, "%d %d %d %d",reg[j].ED, reg[j].codcli, reg[j].idade, reg[j].PROX);
+            }
+    } 
+}
+
+void criarArquivoA7( FILE *arquivoDados_base,FILE *arquivoA7, RegistroA3 *reg){
+    int i = 0;
+    while (!feof(arquivoDados_base))
+    {
+        fscanf(arquivoDados_base, "%*d %s %*d", reg[i].nome);
+        i++;
+    }
+    
+
+    for(int j = 0; j < ELEMENTS; j++ )
+    {
+            if(j + 1 != ELEMENTS)
+            {
+                fprintf(arquivoA7, "%d %s %d %d\n", reg[j].codcli, reg[j].nome, reg[j].idade, reg[j].PROX);
+            }else{
+                fprintf(arquivoA7, "%d %s %d %d", reg[j].codcli, reg[j].nome, reg[j].idade, reg[j].PROX);
+            }
+    } 
+}
+
 int main() {
     FILE *arquivoDados = fopen("dados copy.bin", "rb");
     FILE *arquivoA2 = fopen("A2.bin", "wb");
     FILE *arquivoA3 = fopen("A3.bin", "wb");
     FILE *arquivoA4 = fopen("A4.bin", "wb");
     FILE *arquivoA5 = fopen("A5.bin", "wb");
+    FILE *arquivoA6 = fopen("A6.bin", "wb");
+    FILE *arquivoA7 = fopen("A7.bin", "wb");
     RegistroA3 *temp;
     criarArquivoA2(arquivoDados, arquivoA2);
     temp = criarArquivoA3(arquivoDados ,arquivoA3);
     criarArquivoA4(arquivoA4, arquivoA5, temp);
+    criarArquivoA6(arquivoA6, temp);
+    criarArquivoA7(arquivoDados,arquivoA7, temp);
     return 0;
 }
