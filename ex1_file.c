@@ -17,6 +17,13 @@ typedef struct CLIENTE
     char Data_nasc[20];
 } cli;
 
+typedef struct TEMPORARIO
+{
+    int num;
+    char nome[50];
+    char Data_nasc[20];
+} temp;
+
 void imprime(int part_size, cli part[])
 {
     for (int i = 0; i < part_size; i++)
@@ -27,22 +34,44 @@ void imprime(int part_size, cli part[])
 }
 void inicializando(FILE *fl, cli part[])
 {
+    temp temporario;
+    printf("\n");
+    printf("vetor intermediario: \n");
+    printf("\n");
     for (int i = 0; i < 7; i++)
     {
-        fscanf(fl, "%d %s %s\n", &part[i].cod_cli.num, part[i].nome, part[i].Data_nasc);
+        fread(&temporario, sizeof(temp), 1, fl);
+        part[i].cod_cli.num = temporario.num;
+        strcpy(part[i].nome, temporario.nome);
+        strcpy(part[i].Data_nasc, temporario.Data_nasc);
+        //fscanf(fl, "%d %s %s\n", &part[i].cod_cli.num, part[i].nome, part[i].Data_nasc);
         part[i].cod_cli.congelado = 0;
         part[i].cod_cli.zerado = 0;
-        printf("%d ", part[i].cod_cli.num);
+
+        printf("%d %s %s\n", part[i].cod_cli.num, part[i].nome, part[i].Data_nasc);
     }
     printf("\n");
 }
 void write(char name_file[], int num_part, FILE *p, int menor, char name[], char data_nasc[])
 {
+    temp tempo;
+    temp read;
+    tempo.num = menor;
+    strcpy(tempo.nome, name);
+    strcpy(tempo.Data_nasc, data_nasc);
     sprintf(name_file, "p%d", num_part);
     p = fopen(name_file, "ab");
-    fprintf(p, "%d %s %s\n", menor, name, data_nasc);
+    fwrite(&tempo, sizeof(temp), 1, p);
+    //fprintf(p, "%d %s %s\n", menor, name, data_nasc);
     fclose(p);
+    /*p = fopen(name_file, "rb");
+
+    fread(&read, sizeof(temp), 1, p);
+
+    printf("read - numero: %d nome: %s data: %s\n", read.num, read.nome, read.Data_nasc);
+    fclose(p);*/
 }
+
 int frozen(int part_size, cli part[], int count)
 {
     for (int i = 0; i < part_size; i++)
@@ -54,53 +83,66 @@ int frozen(int part_size, cli part[], int count)
     }
     return count;
 }
-void create_file(FILE *fl)
-{
-        cli vec[25];
-        char date[20], name[3][20] = {"joão_pedro","gabriel", "sylvino"};
-        int count = 1, count_name = 0;
+void create_file(FILE *fl) {
+    temp tempor[24];  // Variável para armazenar os dados (não precisa de malloc)
+    temp read[24];    // Variável para armazenar os dados lidos do arquivo
+    int vec[24] = {30, 14, 15, 75, 32, 6, 5, 81, 48, 41, 87, 18, 56, 20, 26, 4, 21, 65, 22, 49, 11, 16, 8, 12};
+    char date[20], name[3][20] = {"joao_pedro", "gabriel", "sylvino"};
+    int count = 1, count_name = 0;
 
-        for (int i = 0; i < 24; i++, count++, count_name++)
-        {
-            if(count_name >= 3)
-            {
-                count_name = 0;
-            }
-            strcpy(vec[i].nome, name[count_name]);
-            sprintf(date, "%d/07/2004", count);
-            strcpy(vec[i].Data_nasc, date);
+    // Gravar os números no arquivo binário
+    for (int i = 0; i < 24; i++, count_name++) {
+        if (count_name > 2) {
+            count_name = 0;  // Resetar para 0, para ciclar entre os nomes
         }
 
-        vec[0].cod_cli.num = 30;
-        vec[1].cod_cli.num = 14;
-        vec[2].cod_cli.num = 15;
-        vec[3].cod_cli.num = 75;
-        vec[4].cod_cli.num = 32;
-        vec[5].cod_cli.num = 6;
-        vec[6].cod_cli.num = 5;
-        vec[7].cod_cli.num = 81;
-        vec[8].cod_cli.num = 48;
-        vec[9].cod_cli.num = 41;
-        vec[10].cod_cli.num = 87;
-        vec[11].cod_cli.num = 18;
-        vec[12].cod_cli.num = 56;
-        vec[13].cod_cli.num = 20;
-        vec[14].cod_cli.num = 26;
-        vec[15].cod_cli.num = 4;
-        vec[16].cod_cli.num = 21;
-        vec[17].cod_cli.num = 65;
-        vec[18].cod_cli.num = 22;
-        vec[19].cod_cli.num = 49;
-        vec[20].cod_cli.num = 11;
-        vec[21].cod_cli.num = 16;
-        vec[22].cod_cli.num = 8;
-        vec[23].cod_cli.num = 12;
-        int vect[25] = {30, 14, 15, 75, 32, 6, 5, 81, 48, 41, 87, 18, 56, 20, 26, 4, 21, 65, 22, 49, 11, 16, 8, 12};
-        for (int i = 0; vect[i] != '\0'; i++)
-        {
-            fprintf(fl, "%d %s %s\n", vec[i].cod_cli.num, vec[i].nome, vec[i].Data_nasc);
-        }
+        // Preencher os dados fictícios para cada pessoa
+        tempor[i].num = vec[i];
+        strcpy(tempor[i].nome, name[count_name]);
+        sprintf(date, "%d/07/2004", count++);
+        strcpy(tempor[i].Data_nasc, date);
+        // Escrever a estrutura 'tempor[i]' no arquivo
+        fwrite(&tempor[i], sizeof(temp), 1, fl);
+    }
+
+    // Reposicionar o ponteiro para o início do arquivo para leitura
+    fclose(fl);
+    fl = fopen("dados.bin", "rb");
+
+    printf("arquivo:\n");
+    fread(read, sizeof(temp), 24, fl);
+    // Ler os dados do arquivo e imprimir
+    for (int i = 0; i < 24; i++) {
+        printf("Numero: %d, Nome: %s, Data de Nascimento: %s\n", read[i].num, read[i].nome, read[i].Data_nasc);
+    }
+
+    // Fechar o arquivo após a operação
+    fclose(fl);
 }
+
+void imprimir(FILE *fl, char name_file[])
+{
+    fclose(fl);
+    fl = fopen(name_file, "rb");
+    if (fl == NULL) {
+        printf("Erro ao abrir o arquivo.\n");
+        return;
+    }
+
+    temp tempo;
+    printf("Arquivo:\n");
+
+    // Lê o arquivo até o final
+    while (fread(&tempo, sizeof(temp), 1, fl) == 1) {
+        // Imprime somente se a leitura for bem-sucedida
+        printf("Numero: %d, Nome: %s, Data de Nascimento: %s\n", tempo.num, tempo.nome, tempo.Data_nasc);
+    }
+
+    printf("\n");
+
+    fclose(fl);  // Fechar o arquivo após a leitura
+}
+
 int main()
 {
     // create file
@@ -111,7 +153,6 @@ int main()
     // limpando o arquivo
     fl = fopen("dados.bin", "wb");
     create_file(fl);
-    fclose(fl);
     fl = fopen("dados.bin", "rb");
     inicializando(fl, part);
     int menor_part = 123456789;
@@ -138,7 +179,9 @@ int main()
         // checando se vai congelar ou n
         if (menor < menor_part)
         {
-            printf("\ncongelei %d em %d\n", menor, menor_part);
+            printf("\n");
+            printf("congelei %d em %d\n", menor, menor_part);
+            printf("\n");
             part[pos_empty].cod_cli.congelado = 1;
         }
         else
@@ -152,7 +195,12 @@ int main()
             }
             else
             {
-                fscanf(fl, "%d %s %s\n", &part[pos_empty].cod_cli.num, part[pos_empty].nome, part[pos_empty].Data_nasc);
+                temp tempo;
+                fread(&tempo, sizeof(temp), 1, fl);
+                part[pos_empty].cod_cli.num = tempo.num;
+                strcpy(part[pos_empty].nome, tempo.nome);
+                strcpy(part[pos_empty].Data_nasc, tempo.Data_nasc);
+                //fscanf(fl, "%d %s %s\n", &part[pos_empty].cod_cli.num, part[pos_empty].nome, part[pos_empty].Data_nasc);
                 // para zerar quando chegar no final do aqruivoi
                 if (feof(fl))
                 {
@@ -174,7 +222,11 @@ int main()
             }
             if (count == part_size)
             {
-                printf("acabou");
+                printf("acabou\n");
+                printf("\n");
+                printf("terminou arquivo %d\n", num_part);
+                printf("\n");
+                imprimir(p, name_file);
                 break;
             }
         }
@@ -185,6 +237,10 @@ int main()
             {
                 part[i].cod_cli.congelado = 0;
             }
+            printf("\n");
+            printf("terminou arquivo %d\n", num_part);
+            printf("\n");
+            imprimir(p, name_file);
             num_part++;
             sprintf(name_file, "p%d", num_part);
             p = fopen(name_file, "wb");
@@ -193,5 +249,11 @@ int main()
         }
         imprime(part_size, part);
     }
+
+    printf("\n");
+
+    /*printf("imprimindo todos os arquivos\n");
+    imprimir(p, "p2");
+    imprimir(p, "p3");*/
 
 }
