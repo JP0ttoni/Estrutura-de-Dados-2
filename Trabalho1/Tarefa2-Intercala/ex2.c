@@ -5,7 +5,6 @@
 #define MAX_PARTITIONS 10
 #define MAX_NAME_LENGTH 50 
 #define MAX_DATE_LENGTH 20 
-#define MAX_INT 123456789  
 
 typedef struct CLIENTE {
     int cod_cliente;
@@ -51,7 +50,7 @@ void intercalar_particoes(char *particoes[], int num_particoes, char *arquivo_sa
     No heap[MAX_PARTITIONS];        // heap para os vencedores
     int num_ativos = 0;             // arquivos com algum número dentro
 
-    // abre todos e coloca primeiro elemento na heap
+    // abre todos e coloca o primeiro elemento na heap
     for (int i = 0; i < num_particoes; i++) {
         files[i] = fopen(particoes[i], "rb");
         if (files[i] == NULL) {
@@ -60,7 +59,7 @@ void intercalar_particoes(char *particoes[], int num_particoes, char *arquivo_sa
         }
 
         Cliente cliente;
-        if (fscanf(files[i], "%d %s %s\n", &cliente.cod_cliente, cliente.nome, cliente.data_nascimento) == 3) {
+        if (fread(&cliente, sizeof(Cliente), 1, files[i]) == 1) {
             heap[num_ativos].index_particao = i;
             heap[num_ativos].cliente = cliente;
             num_ativos++;
@@ -79,11 +78,11 @@ void intercalar_particoes(char *particoes[], int num_particoes, char *arquivo_sa
         // primeiro elemento é o menor
         No vencedor = heap[0];
 
-        fprintf(saida, "%d %s %s\n", vencedor.cliente.cod_cliente, vencedor.cliente.nome, vencedor.cliente.data_nascimento);
+        fwrite(&vencedor.cliente, sizeof(Cliente), 1, saida);
 
         // lê o próximo elemento do arquivo vencedor
         Cliente cliente;
-        if (fscanf(files[vencedor.index_particao], "%d %s %s\n", &cliente.cod_cliente, cliente.nome, cliente.data_nascimento) == 3) {
+        if (fread(&cliente, sizeof(Cliente), 1, files[vencedor.index_particao]) == 1) {
             heap[0].cliente = cliente;
         } else {
             // se vazio, substitui o elemento vencedor pelo último do heap
@@ -101,13 +100,37 @@ void intercalar_particoes(char *particoes[], int num_particoes, char *arquivo_sa
     fclose(saida);
 }
 
+void exibir_arquivo_binario(const char *arquivo) {
+    FILE *file = fopen(arquivo, "rb");
+    if (file == NULL) {
+        printf("Erro ao abrir o arquivo binário para leitura: %s\n", arquivo);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("\nConteúdo do arquivo binário '%s':\n", arquivo);
+    printf("=========================================\n");
+    printf("| Código | Nome                     | Data       |\n");
+    printf("=========================================\n");
+
+    Cliente cliente;
+    while (fread(&cliente, sizeof(Cliente), 1, file) == 1) {
+        printf("| %-6d | %-24s | %-10s |\n", cliente.cod_cliente, cliente.nome, cliente.data_nascimento);
+    }
+
+    printf("=========================================\n");
+
+    fclose(file);
+}
+
 int main() {
     char *particoes[] = {"p1", "p2", "p3"};
     int num_particoes = 3;
 
-    char *arquivo_saida = "resultado_final.txt";
+    char *arquivo_saida = "resultado_final.bin";
 
     intercalar_particoes(particoes, num_particoes, arquivo_saida);
+
+    exibir_arquivo_binario(arquivo_saida);
 
     printf("Intercalação concluída com sucesso. Arquivo gerado: %s\n", arquivo_saida);
 
