@@ -15,63 +15,10 @@
 typedef struct
 {
     int cod;
-    char nome[10];
+    char nome[100];
     int prox;
     bool status;
 } Cliente;
-
-static size_t escreveCliente(Cliente *cliente, FILE *arquivo)
-{
-    // Escreve o cliente no arquivo e retorna a quantidade de registros escritos
-    return fwrite(cliente, sizeof(Cliente), 1, arquivo);
-}
-
-static Cliente *leCliente(FILE *arquivo)
-{
-    // Cria um espaço para armazenar um cliente lido do arquivo
-    Cliente *cliente = malloc(sizeof(Cliente));
-
-    if (cliente == NULL)
-    {
-        fprintf(stderr, "Erro ao alocar memória para Cliente\n");
-        return NULL;
-    }
-
-    if (fread(cliente, sizeof(Cliente), 1, arquivo) != 1)
-    {
-        // Libera memória se a leitura falhar
-        free(cliente);
-        if (feof(arquivo))
-        {
-            return NULL; // Chegou ao final do arquivo
-        }
-        perror("Erro ao ler Cliente do arquivo");
-        exit(EXIT_FAILURE); // Sai do programa com código de erro
-    }
-
-    return cliente;
-}
-
-int verificar_fatorCarga(FILE *tabClientes, int tam_tabela, float limite_fator_carga)
-{
-    Cliente cliente;
-    int ativos = 0;
-
-    // Reposiciona no início do arquivo
-    rewind(tabClientes);
-
-    // Conta quantos clientes estão ativos
-    while (fread(&cliente, sizeof(Cliente), 1, tabClientes) == 1)
-    {
-        if (cliente.status)
-        {
-            ativos++;
-        }
-    }
-
-    float fator_carga = (float)ativos / tam_tabela;
-    return (fator_carga >= limite_fator_carga);
-}
 
 void exibir_tabHash(const char *caminho_tabHash, int tam_tabela)
 {
@@ -107,6 +54,33 @@ void exibir_tabHash(const char *caminho_tabHash, int tam_tabela)
 
     printf("=======================================\n\n");
     fclose(tabHash);
+}
+
+void exibir_tabClientes_sequencial(const char *caminho_tabClientes)
+{
+    FILE *tabClientes = fopen(caminho_tabClientes, "rb");
+    if (tabClientes == NULL)
+    {
+        fprintf(stderr, "Erro ao abrir tabClientes.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("\nTabela de Clientes (Sequencial):\n");
+    printf("=================================\n");
+
+    Cliente cliente;
+    int indice = 0;
+
+    while (fread(&cliente, sizeof(Cliente), 1, tabClientes))
+    {
+        printf("Cliente #%02d:\n", indice++);
+        printf("  Nome: %s\n", cliente.nome);
+        printf("  Código: %d\n", cliente.cod);
+        printf("  Próximo Offset: %d\n", cliente.prox);
+        printf("---------------------------------\n");
+    }
+
+    fclose(tabClientes);
 }
 
 void exibir_tabela(const char *caminho_tabClientes, const char *caminho_tabHash, int tam_tabela)
@@ -153,31 +127,14 @@ void exibir_tabela(const char *caminho_tabClientes, const char *caminho_tabHash,
     fclose(tabClientes);
 }
 
-void exibir_tabClientes_sequencial(const char *caminho_tabClientes)
-{
-    FILE *tabClientes = fopen(caminho_tabClientes, "rb");
-    if (tabClientes == NULL)
-    {
-        fprintf(stderr, "Erro ao abrir tabClientes.\n");
-        exit(EXIT_FAILURE);
+void criar_tabClientes() {
+    FILE *tabela = fopen("tabClientes", "wb");
+    if (tabela == NULL) {
+        perror("Erro ao abrir o arquivo");
+        exit(1);
     }
 
-    printf("\nTabela de Clientes (Sequencial):\n");
-    printf("=================================\n");
-
-    Cliente cliente;
-    int indice = 0;
-
-    while (fread(&cliente, sizeof(Cliente), 1, tabClientes))
-    {
-        printf("Cliente #%02d:\n", indice++);
-        printf("  Nome: %s\n", cliente.nome);
-        printf("  Código: %d\n", cliente.cod);
-        printf("  Próximo Offset: %d\n", cliente.prox);
-        printf("---------------------------------\n");
-    }
-
-    fclose(tabClientes);
+    fclose(tabela);
 }
 
 void criar_tabela_hash(int tamanho_tabela)
@@ -199,6 +156,27 @@ void criar_tabela_hash(int tamanho_tabela)
     fclose(tabela);
 }
 
+int verificar_fatorCarga(FILE *tabClientes, int tam_tabela, float limite_fator_carga)
+{
+    Cliente cliente;
+    int ativos = 0;
+
+    // Reposiciona no início do arquivo
+    rewind(tabClientes);
+
+    // Conta quantos clientes estão ativos
+    while (fread(&cliente, sizeof(Cliente), 1, tabClientes) == 1)
+    {
+        if (cliente.status)
+        {
+            ativos++;
+        }
+    }
+
+    float fator_carga = (float)ativos / tam_tabela;
+    return (fator_carga >= limite_fator_carga);
+}
+
 int funcao_hash(int codigo, int tamanho_tabela, int L)
 {
     int hash = codigo % (int)((tamanho_tabela)*pow(2, L));
@@ -211,7 +189,7 @@ int mapear_endereco(int codigo, int tam_tabela, int P, int L)
     int endereco = funcao_hash(codigo, tam_tabela, L);
 
     // Determina se o endereço precisa ser recalculado com o próximo nível
-    if (endereco >= P)
+    if (endereco < P)
     {
         endereco = funcao_hash(codigo, tam_tabela, L + 1);
     }
@@ -225,14 +203,14 @@ void expandir_tabela(const char *arquivoClientes, const char *arquivoHash, int *
 
     // Abrindo os arquivos necessários
     FILE *tabHash = fopen(arquivoHash, "r+b");
-    if (!tabHash)
+    if (tabHash == NULL)
     {
         fprintf(stderr, "Erro ao abrir tabHash.\n");
         exit(EXIT_FAILURE);
     }
 
     FILE *tabClientes = fopen(arquivoClientes, "r+b");
-    if (!tabClientes)
+    if (tabClientes == NULL)
     {
         fprintf(stderr, "Erro ao abrir tabClientes.\n");
         fclose(tabHash);
@@ -244,7 +222,7 @@ void expandir_tabela(const char *arquivoClientes, const char *arquivoHash, int *
     fwrite(&vazio, sizeof(int), 1, tabHash);
 
     // Calcula o novo tamanho da tabela
-    int novo_tamanho = (*tam_tabela) + *P;
+    int novo_tamanho = (*tam_tabela) + 1;
 
     // Processa os elementos do índice P na tabela
     fseek(tabHash, (*P) * sizeof(int), SEEK_SET);
@@ -453,12 +431,12 @@ void inserir_cliente(Cliente novo_cliente, char *caminho_tabClientes, char *cami
     fclose(arquivo_hash);
 }
 
-void remover_cliente(int codigo, char *tabClientes, char *tabHash, int *table_size, int *P, int *L)
+void remover_cliente(int codigo, char *tabClientes, char *tabHash, int *table_size, int *L)
 {
     int hash = funcao_hash(codigo, *table_size, *L);
     FILE *hashFile = fopen(tabHash, "r+b");
     FILE *clientesFile = fopen(tabClientes, "r+b");
-    if (!hashFile || !clientesFile)
+    if (hashFile == NULL || clientesFile == NULL)
     {
         fprintf(stderr, "Erro ao abrir os arquivos.\n");
         return;
@@ -521,7 +499,6 @@ void remover_cliente(int codigo, char *tabClientes, char *tabHash, int *table_si
 Cliente *encontrar_cliente(int codigo_cliente, char *caminho_tabClientes, char *caminho_tabHash, int tamanho_base, int P, int L)
 {
     int indice_calculado = mapear_endereco(codigo_cliente, tamanho_base, P, L);
-    int tamanho_tabela = tamanho_base + P;
 
     FILE *arquivo_hash = fopen(caminho_tabHash, "rb");
     if (arquivo_hash == NULL)
@@ -599,43 +576,69 @@ int main(int argc, char *argv[])
     int table_size = atoi(argv[1]);
     float limite_fator_de_carga = 1.0;
 
-    printf("=== Inicializando a Tabela Hash ===\n");
     criar_tabela_hash(table_size);
+    criar_tabClientes();
+
+    //printf("=== Inicializando a Tabela Hash ===\n");
     char *tabClientes = "tabClientes";
     char *tabHash = "tabHash";
 
     // Criando arquivo inicial de clientes
-    FILE *p = fopen(tabClientes, "w");
+    FILE *p = fopen("listaclientes.txt", "rb");
+    if (p == NULL)
+    {
+        perror("Erro ao abrir arquivo de clientes");
+        return 1;
+    }
+    
+    // Criando clientes de exemplo
+    Cliente um, dois,tres,quatro,cinco,seis;
+
+    fseek(p, 0 * sizeof(Cliente), SEEK_SET);
+    fread(&um, sizeof(Cliente), 1, p);
+
+    fseek(p, 1 * sizeof(Cliente), SEEK_SET);
+    fread(&dois, sizeof(Cliente), 1, p);
+
+    fseek(p, 2 * sizeof(Cliente), SEEK_SET);
+    fread(&tres, sizeof(Cliente), 1, p);
+
+    fseek(p, 3 * sizeof(Cliente), SEEK_SET);
+    fread(&quatro, sizeof(Cliente), 1, p);
+
+    fseek(p, 4 * sizeof(Cliente), SEEK_SET);
+    fread(&cinco, sizeof(Cliente), 1, p);
+
+    fseek(p, 5 * sizeof(Cliente), SEEK_SET);
+    fread(&seis, sizeof(Cliente), 1, p);
+
     fclose(p);
 
-    printf("Tabela hash criada com tamanho inicial: %d\n\n", table_size);
-
-    // Criando clientes de exemplo
-    Cliente cliente1 = {5, "João"};
-    Cliente cliente2 = {10, "Maria"};
-    Cliente cliente3 = {15, "Caitlyn"};
-    Cliente cliente4 = {20, "Ana"};
-    // Cliente cliente5 = {12, "Beatriz"};
-
-    printf("=== Adicionando Clientes ===\n");
-    inserir_cliente(cliente2, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
-    inserir_cliente(cliente3, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
-    inserir_cliente(cliente1, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
-    inserir_cliente(cliente4, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
-    // inserir_cliente(cliente5, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
+    
+    inserir_cliente(um, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
+    inserir_cliente(dois, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
+    inserir_cliente(tres, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
+    inserir_cliente(quatro, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
+    inserir_cliente(cinco, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
+    inserir_cliente(seis, tabClientes, tabHash, &table_size, &P, limite_fator_de_carga, &L);
 
     printf("\nClientes adicionados com sucesso!\n\n");
 
     printf("=== Exibindo Tabela Hash ===\n");
-    exibir_tabHash(tabHash, table_size);
+    exibir_tabHash(tabHash, table_size + P);
     printf("\n");
 
     printf("=== Exibindo Tabela de Clientes ===\n");
     exibir_tabClientes_sequencial(tabClientes);
     printf("\n");
 
+
+    /*
     printf("=== Buscando Cliente ===\n");
-    int cod_busca = 10; // Código do cliente para busca
+    int cod_busca; // Código do cliente para busca
+    printf("Digite o código que quer buscar: ");
+    scanf("%d", &cod_busca);
+    printf("\n");
     Cliente *cliente_encontrado = encontrar_cliente(cod_busca, tabClientes, tabHash, table_size, P, L);
     if (cliente_encontrado)
     {
@@ -649,9 +652,13 @@ int main(int argc, char *argv[])
     printf("\n");
 
     printf("=== Removendo Cliente ===\n");
-    int cod_remocao = 15; // Código do cliente a ser removido
-    remover_cliente(cod_remocao, tabClientes, tabHash, &table_size, &P, &L);
-    printf("Cliente com código %d foi excluído.\n\n", cod_remocao);
+    int cod_remocao; // Código do cliente a ser removido
+    printf("Digite o código que quer remover: ");
+    scanf("%d", &cod_remocao);
+    printf("\n");
+    remover_cliente(cod_remocao, tabClientes, tabHash, &table_size, &L);
+    //printf("Cliente com código %d foi excluído.\n\n", cod_remocao);
+    printf("\n\n");
 
     printf("=== Exibindo Tabela Hash Após Exclusão ===\n");
     exibir_tabHash(tabHash, table_size + P);
@@ -660,11 +667,13 @@ int main(int argc, char *argv[])
     printf("=== Exibindo Tabela de Clientes Após Exclusão ===\n");
     exibir_tabClientes_sequencial(tabClientes);
     printf("\n");
+    */
 
     printf("=== Exibindo Tabela Hash Completa ===\n");
     exibir_tabela(tabClientes, tabHash, table_size + P);
     printf("\n");
 
     printf("=== Testes Concluídos ===\n");
+
     return 0;
 }
